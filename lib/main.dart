@@ -50,12 +50,6 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  /*final AveControl aveControl = Get.put(AveControl());
-  final CardControllerH cardControllerH = Get.put(CardControllerH());
-  final CardControllerC cardControllerC = Get.put(CardControllerC());
-  final CardController cardController = Get.put(CardController());
-  final AuthController authController = Get.put(AuthController());
-  final InvitationSystem invitationSystem = Get.put(InvitationSystem());*/
 
   MyApp({super.key});
 
