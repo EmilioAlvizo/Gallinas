@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "44314688631",
+    "project_id": "app-gallinas-dfeea",
+    "storage_bucket": "app-gallinas-dfeea.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44314688631:android:30907cf37c3e9dd45a1a72",
+        "android_client_info": {
+          "package_name": "com.appgallinas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "44314688631-iq42485rbmdoc7tm9dibductrc37j319.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.appgallinas",
+            "certificate_hash": "3e196260b85f2a47b295393c15edcf576a8e81cf"
+          }
+        },
+        {
+          "client_id": "44314688631-u89k11ien9tbdl192vtq5preothpmm7t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.appgallinas",
+            "certificate_hash": "b3e6cd251dfa20290dcbf73b2d6755ca2d56edce"
+          }
+        },
+        {
+          "client_id": "44314688631-a2tlvb04k3nvqnhjqhn397efl0m1ssk1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBerd408KXzYxTMLYth8W4_q7LWBUyPPRQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "44314688631-a2tlvb04k3nvqnhjqhn397efl0m1ssk1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "44314688631-0d49dr6iq753t9khvat0s8ev80dkj3o6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gallinero"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
