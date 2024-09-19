@@ -17,7 +17,7 @@ import 'src/navegacion.dart';
 import 'src/opciones.dart';
 import 'src/sqlite.dart';
 
-//import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,12 +45,10 @@ void main() async {
       const Settings(persistenceEnabled: true);
 
   //SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-
   MyApp({super.key});
 
   @override
@@ -59,34 +57,28 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Gallinero',
       home: StreamBuilder<User?>(
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (context, snapshot) {
-              print('snapshot ${snapshot.connectionState} +++++++++++++++++++----------------------------           en myapp');
-              if (snapshot.connectionState == ConnectionState.active) {
-                User? user = snapshot.data;
-                print('user ${user} +++++++++++++++++++----------------------------           en myapp');
-                if (user == null) {
-                  return LoginPage();
-                } else {
-                  return BottomNavBar();
-                }
-              } else {
-                return const CircularProgressIndicator();
-              }
-            }, 
-          ),
-      /*SafeArea(
-        top: false,
-        child: Obx(() {
-          if (authController.authState.value.isAuthenticated) {
-            print('authController.authState.value.isAuthenticated ${authController.authState.value.isAuthenticated}');
-            return BottomNavBar();
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          print(
+              'snapshot ${snapshot.connectionState} +++++++++++++++++++----------------------------           en myapp');
+          if (snapshot.connectionState == ConnectionState.active) {
+            User? user = snapshot.data;
+            SystemChrome.setEnabledSystemUIMode(
+              SystemUiMode.immersiveSticky,
+              //SystemUiMode.edgeToEdge
+            );
+            print(
+                'user ${user} +++++++++++++++++++----------------------------           en myapp');
+            if (user == null) {
+              return LoginPage();
+            } else {
+              return BottomNavBar();
+            }
           } else {
-            print('authController.authState.value.isAuthenticated ${authController.authState.value.isAuthenticated}');
-            return LoginPage();
+            return const CircularProgressIndicator();
           }
-        }),*/
-        /**/
+        },
+      ),
       navigatorObservers: [GetObserver()],
       initialBinding: BindingsBuilder.put(() => NavegacionVar()),
       theme: AppTheme.lightTheme,
@@ -95,4 +87,5 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 

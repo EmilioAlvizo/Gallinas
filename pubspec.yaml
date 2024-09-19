@@ -48,6 +48,8 @@ dependencies:
   shared_preferences:
   flutter_secure_storage:
   connectivity_plus:
+  flutter_native_splash:
+  #system_ui:
   #services:
   #shared_preferences:
 
@@ -87,6 +89,7 @@ flutter:
   assets:
   #   - images/a_dot_burr.jpeg
   - assets/
+  - assets/icon/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
