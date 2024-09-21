@@ -1,6 +1,169 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'dart:ui' as ui;
+import 'dart:ui';
+
+class OutlinedText extends StatelessWidget {
+  final String text;
+  final double fontSize;
+  final Color textColor;
+  final Color outlineColor;
+  final double outlineWidth;
+  final FontWeight fontWeight;
+
+  const OutlinedText({
+    Key? key,
+    required this.text,
+    this.fontSize = 24,
+    this.textColor = Colors.white,
+    this.outlineColor = Colors.black,
+    this.outlineWidth = 2,
+    this.fontWeight = FontWeight.bold,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: <Widget>[
+        // Outline
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = outlineWidth
+              ..color = outlineColor,
+          ),
+        ),
+        // Inner text
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            color: textColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class GlassmorphicText extends StatelessWidget {
+  final String text;
+  final double fontSize;
+  final Color textColor;
+  final double blurIntensity;
+  final double opacity;
+
+  const GlassmorphicText({
+    Key? key,
+    required this.text,
+    this.fontSize = 24,
+    this.textColor = Colors.white,
+    this.blurIntensity = 1,
+    this.opacity = 0.2,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Blurred background
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blurIntensity, sigmaY: blurIntensity),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(opacity),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+        // Text
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: fontSize,
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CreditCardText extends StatelessWidget {
+  final String text;
+  final double fontSize;
+  final Color baseColor;
+  final Color highlightColor;
+  final Color shadowColor;
+
+  const CreditCardText({
+    Key? key,
+    required this.text,
+    this.fontSize = 24,
+    this.baseColor = const Color(0xFFD0D0D0),
+    this.highlightColor = const Color(0xFFF0F0F0),
+    this.shadowColor = const Color(0xFF9E9E9E),
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: <Widget>[
+        // Base layer
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: baseColor,
+          ),
+        ),
+        // Highlight layer
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            foreground: Paint()
+              ..shader = ui.Gradient.linear(
+                const Offset(0, 0),
+                Offset(0, fontSize),
+                [
+                  highlightColor,
+                  baseColor,
+                ],
+              ),
+          ),
+        ),
+        // Shadow layer
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            foreground: Paint()
+              ..strokeWidth = 2
+              ..color = shadowColor
+              ..style = PaintingStyle.stroke
+              ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 4),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class DatePicker extends StatefulWidget {
   TextEditingController control;

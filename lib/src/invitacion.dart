@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:math';
 
 import 'comida.dart';
 import 'control.dart';
@@ -10,10 +11,12 @@ import 'gallinas.dart';
 import 'huevos.dart';
 import 'sqlite.dart';
 import 'snackbar_utils.dart';
+import 'texto.dart';
 
 class InvitationSystem extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FarmSelectionController farmSelectionController = Get.find();
 
   Future<void> inviteUser(String invitedUserEmail,
       {List<String>? collectionsToShare}) async {
@@ -235,6 +238,9 @@ class InvitationSystem extends GetxController {
           .doc(invitationId)
           .update({'status': 'accepted'});
 
+      farmSelectionController.loadFarms(currentUser);
+      farmSelectionController.onInit();
+
       Get.snackbar('Éxito', 'Invitación aceptada');
     } catch (e) {
       Get.snackbar('Error', 'No se pudo aceptar la invitación: $e');
@@ -346,6 +352,48 @@ class FarmSelectionController extends GetxController {
       'sumas'.obs; // Por defecto, seleccionamos 'sumas'
   final NavegacionVar navegacionVar = Get.find();
 
+  final RxList<String> backgroundImages = <String>[].obs;
+  final RxMap<String, String> farmBackgrounds = <String, String>{}.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadBackgroundImages();
+    distributeFarmBackgrounds();
+  }
+
+  void loadBackgroundImages() {
+    // Cargar las rutas de las imágenes de fondo
+    backgroundImages.value = [
+      'assets/icon/card1.jpeg',
+      'assets/icon/card2.jpeg',
+      'assets/icon/card3.jpeg',
+      'assets/icon/card4.jpeg',
+      // Agrega más imágenes según sea necesario
+    ];
+  }
+
+  void distributeFarmBackgrounds() {
+    try {
+      if (farms.isEmpty || backgroundImages.isEmpty) return;
+
+      List<String> availableImages = List.from(backgroundImages);
+      for (var farm in farms) {
+        if (availableImages.isEmpty) {
+          // Si nos quedamos sin imágenes únicas, volvemos a llenar la lista
+          availableImages = List.from(backgroundImages);
+        }
+        // Seleccionar una imagen aleatoria de las disponibles
+        final randomIndex = Random().nextInt(availableImages.length);
+        farmBackgrounds[farm['id']] = availableImages[randomIndex];
+        availableImages.removeAt(randomIndex);
+      }
+      print('laslas ${farmBackgrounds}');
+    } catch (e) {
+      print('error $e');
+    }
+  }
+
   loadFarms(User? user) async {
     print('loadFarms');
 
@@ -406,6 +454,127 @@ class FarmSelectionController extends GetxController {
   }
 }
 
+class FarmCard extends StatelessWidget {
+  final Map<String, dynamic> farm;
+  final VoidCallback onTap;
+  final bool isSelected;
+  final String backgroundImage;
+  UserSession userSession;
+
+  FarmCard({
+    Key? key,
+    required this.farm,
+    required this.onTap,
+    required this.isSelected,
+    required this.backgroundImage,
+    required this.userSession,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final customColors = Theme.of(context).extension<CustomColors>()!;
+
+    return Card(
+      color: isSelected ? const Color(0xffE59A54) : customColors.card,
+      child: InkWell(
+        highlightColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10.0),
+            image: DecorationImage(
+              image: AssetImage(backgroundImage),
+              fit: BoxFit.cover,
+              colorFilter: ColorFilter.mode(
+                isSelected
+                    ? Color.fromARGB(0, 0, 0, 0)
+                    : customColors.card!.withOpacity(0.5),
+                BlendMode.srcOver,
+              ),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Stack(
+              children: [
+                // Nombre en la parte superior izquierda
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: OutlinedText(
+                    text: farm['name'],
+                    fontSize: 20,
+                    textColor: Colors.white,
+                    outlineColor: Colors.black,
+                    outlineWidth: 2,
+                  ),
+                  /*CreditCardText(
+                    text: farm['name'],
+                    fontSize: 20,
+                    baseColor: Color.fromARGB(255, 231, 14, 14),
+                    highlightColor: Color.fromARGB(255, 0, 0, 0),
+                    shadowColor: Color.fromARGB(255, 255, 255, 255),
+                  ), */ /*Text(
+                    farm['name'],
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: userSession.usuarioSeleccionado.value == farm['id']
+                          ? customColors.texto1
+                          : customColors.texto4,
+                    ),
+                  ),*/
+                ),
+                // Icono en la parte derecha
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Icon(
+                    farm['icon'],
+                    size: 30,
+                    color: userSession.usuarioSeleccionado.value == farm['id']
+                        ? customColors.texto1
+                        : customColors.iconos,
+                  ),
+                ),
+                // Ubicación e ID en la parte inferior izquierda
+                Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        farm['location'],
+                        style: TextStyle(
+                          color: userSession.usuarioSeleccionado.value ==
+                                  farm['id']
+                              ? customColors.texto1
+                              : customColors.texto3,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        farm['id'],
+                        style: TextStyle(
+                          color: userSession.usuarioSeleccionado.value ==
+                                  farm['id']
+                              ? customColors.texto1
+                              : customColors.texto3,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class FarmSelectionScreen extends StatelessWidget {
   final FarmSelectionController controller = Get.find();
   final UserSession userSession = Get.find();
@@ -447,13 +616,17 @@ class FarmSelectionScreen extends StatelessWidget {
                 ),
                 const Padding(padding: EdgeInsets.only(right: 10.0)),
                 ChoiceChip(
-                  label: Text('Recibidas',
+                  label: Icon(Icons.mark_email_read_rounded,
+                      color: controlador.botonIndex.value == 1
+                          ? customColors.texto1
+                          : const Color(0xff828282)),
+                  /*Text('Recibidas',
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
                           color: controlador.botonIndex.value == 1
                               ? customColors.texto1
-                              : const Color(0xff828282))),
+                              : const Color(0xff828282))),*/
                   backgroundColor: customColors.boton,
                   side: const BorderSide(style: BorderStyle.none),
                   selectedColor: const Color(0xffE59A54),
@@ -470,13 +643,17 @@ class FarmSelectionScreen extends StatelessWidget {
                 ),
                 const Padding(padding: EdgeInsets.only(right: 10.0)),
                 ChoiceChip(
-                  label: Text('Enviadas',
+                  label: Icon(Icons.send_rounded,
+                      color: controlador.botonIndex.value == 2
+                          ? customColors.texto1
+                          : const Color(0xff828282)),
+                  /*Text('Enviadas',
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
                           color: controlador.botonIndex.value == 2
                               ? customColors.texto1
-                              : const Color(0xff828282))),
+                              : const Color(0xff828282))),*/
                   backgroundColor: customColors.boton,
                   side: const BorderSide(style: BorderStyle.none),
                   selectedColor: const Color(0xffE59A54),
@@ -513,36 +690,6 @@ class FarmSelectionScreen extends StatelessWidget {
           Stack(alignment: Alignment.center, children: [
             Column(
               children: [
-                //poner un boton que ejecute la funcion getDatabaseUsers y muestre el resultado en un texto
-                /*ElevatedButton(
-                  onPressed: () async {
-                    var datos = await cardController.sumas;
-                    //await DatabaseHelper.instance.getSumas(userSession.usuarioSeleccionado.value!);
-
-                    List<String> userEmails =
-                        await DatabaseHelper.instance.getDatabaseUsers();
-                    print('principal: ${UserSession.currentUserId}');
-                    print('datos: $datos');
-                    // Aquí puedes mostrar los correos electrónicos en un Text widget o realizar otras acciones necesarias
-                    Get.snackbar('Correos electrónicos', userEmails.join(', '));
-                    duration:
-                    Duration(seconds: 5); // Duración del Snackbar en segundos
-                  },
-                  child: const Icon(Icons.send_rounded),
-                ),*/
-                /*
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DatabaseViewer(
-                            userId: userSession.usuarioSeleccionado.value!),
-                      ),
-                    );
-                  },
-                  child: Text('Ver base de datos'),
-                ),*/
                 Expanded(
                   child: Obx(() {
                     if (controller.farms.isEmpty) {
@@ -562,7 +709,18 @@ class FarmSelectionScreen extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final farm = controller.farms[index];
                         return Obx(
-                          () => Card(
+                          () => FarmCard(
+                            farm: farm,
+                            onTap: () => controller.selectFarm(farm['id']),
+                            isSelected: userSession.usuarioSeleccionado.value ==
+                                farm['id'],
+                            backgroundImage:
+                                controller.farmBackgrounds[farm['id']] ??
+                                    controller.backgroundImages[0],
+                            userSession: userSession,
+                          ),
+
+                          /*Card(
                             color: userSession.usuarioSeleccionado.value ==
                                     farm['id']
                                 ? const Color(0xffE59A54)
@@ -643,7 +801,7 @@ class FarmSelectionScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ),
+                          ),*/
                         );
                       },
                     );
@@ -654,6 +812,9 @@ class FarmSelectionScreen extends StatelessWidget {
           ]),
           Stack(alignment: Alignment.center, children: [
             InvitationsScreen(),
+          ]),
+          Stack(alignment: Alignment.center, children: [
+            SentInvitationsScreen(),
             Positioned(
               bottom: 10,
               right: 0,
@@ -663,16 +824,12 @@ class FarmSelectionScreen extends StatelessWidget {
                 mini: true,
                 onPressed: () {
                   mostrarDialogo(context);
+                  print('aasas ${controller.farmBackgrounds}');
+                  print('aasas ${controller.backgroundImages}');
                 },
                 child: const Icon(Icons.send_rounded),
               ),
             )
-            /*Container(child: Column(children: [_MostrarSumas()])),
-            
-            )*/
-          ]),
-          Stack(alignment: Alignment.center, children: [
-            SentInvitationsScreen(),
           ])
         ],
       ),
@@ -774,6 +931,9 @@ class InvitationsScreen extends StatelessWidget {
     final InvitationSystem invitationSystem = Get.find<InvitationSystem>();
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Invitaciones Recibidas'),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: invitationSystem.getInvitations(),
         builder: (context, snapshot) {
@@ -795,18 +955,18 @@ class InvitationsScreen extends StatelessWidget {
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: Text('Aceptar invitación'),
+                          title: const Text('Aceptar invitación'),
                           content: Text(
                               '¿Deseas aceptar la invitación de ${data['ownerEmail']}?'),
                           actions: <Widget>[
                             TextButton(
-                              child: Text('Cancelar'),
+                              child: const Text('Cancelar'),
                               onPressed: () {
                                 Navigator.of(context).pop();
                               },
                             ),
                             TextButton(
-                              child: Text('Aceptar'),
+                              child: const Text('Aceptar'),
                               onPressed: () {
                                 invitationSystem.acceptInvitation(
                                     document.id, data['ownerUid']);
@@ -824,18 +984,18 @@ class InvitationsScreen extends StatelessWidget {
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        title: Text('Eliminar invitación'),
-                        content: Text(
+                        title: const Text('Eliminar invitación'),
+                        content: const Text(
                             '¿Estás seguro de que deseas eliminar esta invitación?'),
                         actions: <Widget>[
                           TextButton(
-                            child: Text('Cancelar'),
+                            child: const Text('Cancelar'),
                             onPressed: () {
                               Navigator.of(context).pop();
                             },
                           ),
                           TextButton(
-                            child: Text('Eliminar'),
+                            child: const Text('Eliminar'),
                             onPressed: () {
                               // Aquí debes implementar la lógica para eliminar la invitación
                               invitationSystem.deleteInvitation(
@@ -851,9 +1011,9 @@ class InvitationsScreen extends StatelessWidget {
                   );
                 },
                 child: Card(
-                  margin: EdgeInsets.all(8.0),
+                  margin: const EdgeInsets.all(8.0),
                   child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -862,7 +1022,7 @@ class InvitationsScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Invitación de:\n${data['ownerEmail']}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 14, fontWeight: FontWeight.bold),
                             ),
                             //SizedBox(height: 8),
@@ -900,7 +1060,7 @@ class SentInvitationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Invitaciones Enviadas'),
+        title: const Text('Invitaciones Enviadas'),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
@@ -925,9 +1085,9 @@ class SentInvitationsScreen extends StatelessWidget {
                   _showDeleteDialog(context, document.id, data['invitedEmail']);
                 },
                 child: Card(
-                  margin: EdgeInsets.all(8.0),
+                  margin: const EdgeInsets.all(8.0),
                   child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -936,7 +1096,7 @@ class SentInvitationsScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Invitación para:\n${data['invitedEmail']}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 14, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -964,23 +1124,22 @@ class SentInvitationsScreen extends StatelessWidget {
 
   void _showDeleteDialog(
       BuildContext context, String invitationId, String invitedEmail) {
-        
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Eliminar invitación'),
-          content:
-              Text('¿Estás seguro de que deseas eliminar esta invitación?'),
+          title: const Text('Eliminar invitación'),
+          content: const Text(
+              '¿Estás seguro de que deseas eliminar esta invitación?'),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancelar'),
+              child: const Text('Cancelar'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Eliminar'),
+              child: const Text('Eliminar'),
               onPressed: () {
                 invitationSystem.deleteInvitation2(invitationId, invitedEmail);
                 Navigator.of(context).pop();

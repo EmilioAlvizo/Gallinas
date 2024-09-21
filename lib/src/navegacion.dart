@@ -33,6 +33,7 @@ class BottomNavBar extends StatelessWidget {
       //userSession.usuarioSeleccionado.value = currentUser as String?;
       await navegacionVar.inicio(currentUser);
       await farmSelectionController.loadFarms(currentUser);
+      farmSelectionController.onInit();
       print('fin _initializeDatabase');
     } catch (e, stackTrace) {
       print('error en $e');
