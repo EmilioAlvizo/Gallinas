@@ -26,7 +26,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  Get.lazyPut(() => ThemeController());
   Get.lazyPut(() => CardControllerH());
   Get.lazyPut(() => CardControllerC());
   Get.lazyPut(() => CardController());
@@ -53,6 +52,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Get.lazyPut(() => ThemeController(context: context));
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Gallinero',
@@ -87,5 +87,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-

@@ -106,6 +106,13 @@ class AveControl extends GetxController {
 
 class ThemeController extends GetxController {
   var isDarkMode = false.obs;
+  BuildContext context;
+  ThemeController({required this.context});
+
+  void onInit() {
+    // TODO: implement onInit
+    isDarkMode.value = MediaQuery.of(context).platformBrightness == Brightness.dark;
+  }
 
   void toggleTheme() {
     isDarkMode.value = !isDarkMode.value;
@@ -222,7 +229,6 @@ class OptionsPage1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     User? user = FirebaseAuth.instance.currentUser;
-
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       width: MediaQuery.of(context).size.width * 0.8,

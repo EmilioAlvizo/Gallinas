@@ -130,7 +130,7 @@ class CalculoController extends GetxController {
   }
 
   void actualizarDatosEconomicos() {
-    print('actualizarDatosEconomicos');
+    //print('actualizarDatosEconomicos');
     List<Map<String, dynamic>> resultados = [];
     if (alimentosController.filteredSumas.isEmpty) return;
 
@@ -158,7 +158,7 @@ class CalculoController extends GetxController {
     }
 
     comprasAgrupadas.forEach((rango, compras) {
-      print('$rango \t $compras');
+      //print('$rango \t $compras');
       // Calcular costo y consumo total para este periodo
       double costoPeriodo = 0;
       double consumoPeriodo = 0;

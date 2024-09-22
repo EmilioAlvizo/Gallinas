@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_signin_button/flutter_signin_button.dart';
+//import 'package:flutter_signin_button/flutter_signin_button.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:ui';
@@ -40,57 +40,49 @@ class LoginController extends GetxController {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  final GoogleSignIn googleSignIn = GoogleSignIn();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   var emailError = ''.obs;
   var passwordError = ''.obs;
   var generalError = ''.obs;
-  var isLoading = false.obs;
+  var obscureText2 = false.obs;
+
+  @override
+  void onClose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.onClose();
+  }
 
   Future<void> signInWithEmailAndPassword() async {
-    if (!_validateEmail(emailController.text) ||
-        !_validatePassword(passwordController.text)) {
-      return;
-    }
-    isLoading.value = true;
+    if (!validateInputs(emailController, emailError, passwordController,
+        passwordError)) return;
 
     try {
-      await auth.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: emailController.text,
         password: passwordController.text,
       );
-      print('Usuario autenticado: ${auth.currentUser?.uid}');
+      print('Usuario autenticado: ${_auth.currentUser?.uid}');
       // Navegar a la pantalla principal de la aplicación
     } on FirebaseAuthException catch (e) {
-      print('Error de autenticación: ${e.code}');
-      if (e.code == 'user-not-found') {
-        emailError.value = 'Usuario no registrado.';
-      } else if (e.code == 'wrong-password') {
-        passwordError.value = 'Contraseña incorrecta.';
-      } else {
-        generalError.value =
-            'Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.';
-      }
+      print('$e');
+      handleFirebaseAuthError(
+          e, emailError, passwordError, generalError);
     } catch (e) {
+      print('Ocurrió un error inesperado.: $e');
       generalError.value = 'Ocurrió un error inesperado. $e';
-    } finally {
-      isLoading.value = false;
     }
   }
 
   Future<void> signInWithGoogle() async {
     try {
       // Desconectar para asegurarnos de que la sesión esté limpia
-      await googleSignIn.signOut();
-
+      await _googleSignIn.signOut();
       // Iniciar el proceso de inicio de sesión con Google
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
-        // El usuario canceló el inicio de sesión
-        return;
-      }
-
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return; // El usuario canceló el inicio de sesión
       // Obtener los detalles de autenticación de la solicitud
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -102,72 +94,23 @@ class LoginController extends GetxController {
       );
 
       // Iniciar sesión en Firebase con la credencial de Google
-      await auth.signInWithCredential(credential);
+      await _auth.signInWithCredential(credential);
 
-      print('Usuario autenticado con Google: ${auth.currentUser?.uid}');
+      print('Usuario autenticado con Google: ${_auth.currentUser?.uid}');
       // Navegar a la pantalla principal de la aplicación
       // Get.offAllNamed('/home'); // Asegúrate de tener esta ruta definida
     } on FirebaseAuthException catch (e) {
-      print('Error de autenticación con Google: ${e.code}');
-      switch (e.code) {
-        case 'account-exists-with-different-credential':
-          generalError.value =
-              'Ya existe una cuenta con este correo electrónico.';
-          break;
-        case 'invalid-credential':
-          generalError.value = 'Las credenciales son inválidas.';
-          break;
-        case 'operation-not-allowed':
-          generalError.value = 'Operación no permitida. Contacte al soporte.';
-          break;
-        case 'user-disabled':
-          generalError.value = 'Esta cuenta de usuario ha sido deshabilitada.';
-          break;
-        case 'user-not-found':
-          generalError.value =
-              'No se encontró ningún usuario con estas credenciales.';
-          break;
-        default:
-          generalError.value =
-              'Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.';
-      }
+      handleFirebaseAuthError(
+          e, emailError, passwordError, generalError);
     } catch (e) {
       print('Error detallado: $e');
       generalError.value = 'Error inesperado: $e';
     }
   }
-
-  bool _validateEmail(String email) {
-    final emailRegex =
-        RegExp(r"^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$");
-    if (!emailRegex.hasMatch(email)) {
-      emailError.value = 'Ingrese un correo electrónico válido';
-      return false;
-    }
-    emailError.value = '';
-    return true;
-  }
-
-  bool _validatePassword(String password) {
-    if (password.length < 8) {
-      passwordError.value = 'Debe tener al menos 8 caracteres';
-      return false;
-    }
-    passwordError.value = '';
-    return true;
-  }
-
-  void validateEmail(String value) {
-    _validateEmail(value);
-  }
-
-  void validatePassword(String value) {
-    _validatePassword(value);
-  }
 }
 
 class LoginPage extends StatelessWidget {
-  final LoginController _controller = Get.find();
+  final LoginController controller = Get.find();
   var _obscureText = true.obs;
 
   final List<String> imagePaths = [
@@ -225,17 +168,18 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 40),
                           buildGlassTextField(
-                            controller: _controller.emailController,
+                            controller: controller.emailController,
                             labelText: 'Email or username',
-                            errorText: _controller.emailError,
+                            errorText: controller.emailError,
                             textColor: textColor,
                           ),
                           const SizedBox(height: 16),
-                          buildGlassTextField(
-                            controller: _controller.passwordController,
+                          buildGlassTextFieldPassword(
+                            controller: controller.passwordController,
                             labelText: 'Password',
-                            errorText: _controller.passwordError,
+                            errorText: controller.passwordError,
                             obscureText: _obscureText.value,
+                            obscureText2: controller.obscureText2,
                             textColor: textColor,
                           ),
                           Align(
@@ -250,14 +194,14 @@ class LoginPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Obx(() => _controller.generalError.value.isNotEmpty
+                          Obx(() => controller.generalError.value.isNotEmpty
                               ? Text(
-                                  _controller.generalError.value,
+                                  controller.generalError.value,
                                   style: TextStyle(color: customColors.rojo),
                                 )
                               : Container()),
                           ElevatedButton(
-                            onPressed: _controller.signInWithEmailAndPassword,
+                            onPressed: controller.signInWithEmailAndPassword,
                             child: Text('Login',
                                 style: TextStyle(
                                     color: isDarkImage
@@ -311,7 +255,7 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           CustomGoogleSignInButton(
-                            onPressed: _controller.signInWithGoogle,
+                            onPressed: controller.signInWithGoogle,
                             theme: 'dark', // o 'dark' o 'neutral'
                           ),
                         ],
@@ -337,125 +281,119 @@ class SignupController extends GetxController {
 
   var emailError = ''.obs;
   var passwordError = ''.obs;
-  var termsAccepted = false.obs;
   var generalError = ''.obs;
 
   void registerWithEmailAndPassword() async {
-    bool isEmailValid = _validateEmail(emailController.text);
-    bool isPasswordValid = _validatePassword(passwordController.text);
-
-    if (!isEmailValid || !isPasswordValid) {
-      return;
-    }
+    if (!validateInputs(emailController, emailError, passwordController,
+        passwordError)) return;
 
     try {
       await _auth.createUserWithEmailAndPassword(
         email: emailController.text,
         password: passwordController.text,
       );
-      // Navegar a la pantalla principal de la aplicación
+      Get.back();
+      //Get.offAll(() =>BottomNavBar()); // Navigate to home page after successful signup
     } on FirebaseAuthException catch (e) {
-      switch (e.code) {
-        case 'email-already-in-use':
-          emailError.value = 'El correo electrónico ya está en uso';
-          break;
-        case 'invalid-email':
-          emailError.value = 'Ingrese un correo electrónico válido';
-          break;
-        case 'weak-password':
-          passwordError.value = 'La contraseña es demasiado débil';
-          break;
-        case 'operation-not-allowed':
-          generalError.value = 'Operación no permitida. Contacte al soporte.';
-          break;
-        default:
-          generalError.value =
-              'Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.';
-      }
+      print('FirebaseAuthException: ${e.code}'); // Añade esta línea
+      handleFirebaseAuthError(e, emailError, passwordError,
+          generalError); // Añade esta línea
     } catch (e) {
+      print('Unexpected error: $e'); // Añade esta línea
       generalError.value =
           'Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.';
     }
   }
 
-  bool _validateEmail(String email) {
-    final emailRegex =
-        RegExp(r"^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$");
-    if (!emailRegex.hasMatch(email)) {
-      emailError.value = 'Ingrese un correo electrónico válido';
-      return false;
-    }
-    emailError.value = '';
-    return true;
-  }
-
-  bool _validatePassword(String password) {
-    if (password.length < 8) {
-      passwordError.value = 'Debe tener al menos 8 caracteres';
-      return false;
-    }
-    passwordError.value = '';
-    return true;
-  }
-
-  void setTermsAccepted(bool value) {
-    termsAccepted.value = value;
-  }
-
   Future<void> signInWithGoogle() async {
     try {
-      // Iniciar el proceso de inicio de sesión con Google
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      print('googleUser $googleUser');
-      if (googleUser == null) {
-        // El usuario canceló el inicio de sesión
-        return;
-      }
+      if (googleUser == null) return;
 
-      // Obtener los detalles de autenticación de la solicitud
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-      print('googleAuth $googleAuth');
-
-      // Crear una nueva credencial
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Iniciar sesión en Firebase con la credencial de Google
       await _auth.signInWithCredential(credential);
-
-      // Si llegamos aquí, el inicio de sesión fue exitoso
-      // Navegar a la pantalla principal de la aplicación
-      //Get.offAllNamed('/home'); // Asegúrate de tener esta ruta definida
-    } on FirebaseAuthException catch (e) {
-      switch (e.code) {
-        case 'account-exists-with-different-credential':
-          generalError.value =
-              'Ya existe una cuenta con este correo electrónico.';
-          break;
-        case 'invalid-credential':
-          generalError.value = 'Las credenciales son inválidas.';
-          break;
-        case 'operation-not-allowed':
-          generalError.value = 'Operación no permitida. Contacte al soporte.';
-          break;
-        case 'user-disabled':
-          generalError.value = 'Esta cuenta de usuario ha sido deshabilitada.';
-          break;
-        case 'user-not-found':
-          generalError.value =
-              'No se encontró ningún usuario con estas credenciales.';
-          break;
-        default:
-          generalError.value =
-              'Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.';
-      }
+      Get.offAllNamed('/home');
     } catch (e) {
-      print('Error detallado: $e');
-      generalError.value = 'Error inesperado: $e';
+      generalError.value =
+          'Error al iniciar sesión con Google. Por favor, inténtelo de nuevo.';
     }
+  }
+
+  @override
+  void onClose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.onClose();
+  }
+}
+
+bool validateInputs(TextEditingController emailController, RxString emailError,
+    TextEditingController passwordController, RxString passwordError) {
+  bool isValid = true;
+
+  if (!GetUtils.isEmail(emailController.text)) {
+    emailError.value = 'Ingrese un correo electrónico válido';
+    isValid = false;
+  } else {
+    emailError.value = '';
+  }
+
+  if (passwordController.text.length < 8) {
+    passwordError.value = 'La contraseña debe tener al menos 8 caracteres';
+    isValid = false;
+  } else {
+    passwordError.value = '';
+  }
+
+  return isValid;
+}
+
+void handleFirebaseAuthError(FirebaseAuthException e,RxString emailError,
+    RxString passwordError, RxString generalError) {
+  print('Error de autenticación: ${e.code}'); // Añade esta línea
+  switch (e.code) {
+    case 'user-disabled':
+      generalError.value = 'Esta cuenta ha sido deshabilitada.';
+      break;
+    case 'wrong-password':
+      passwordError.value = 'Contraseña incorrecta.';
+      break;
+    case 'user-not-found':
+      emailError.value = 'Usuario no registrado.';
+      break;
+    case 'email-already-in-use':
+      emailError.value = 'El correo electrónico ya está en uso';
+      break;
+    case 'invalid-email':
+      emailError.value = 'Ingrese un correo electrónico válido';
+      break;
+    case 'weak-password':
+      passwordError.value = 'La contraseña es demasiado débil';
+      break;
+    case 'operation-not-allowed':
+      generalError.value = 'Operación no permitida. Contacte al soporte.';
+      break;
+    case 'network-request-failed':
+      generalError.value = 'Error de conexión. Verifique su conexión a internet.';
+      break;
+    case 'too-many-requests':
+      generalError.value = 'Demasiados intentos. Por favor, intente más tarde.';
+      break;
+    case 'account-exists-with-different-credential':
+      generalError.value = 'Ya existe una cuenta con este correo electrónico.';
+      break;
+    case 'invalid-credential':
+      generalError.value = 'Email o contraseña incorrecta.';
+      break;
+    default:
+      generalError.value =
+          'Error: ${e.code}. Por favor, inténtelo de nuevo más tarde.';
   }
 }
 
@@ -577,7 +515,7 @@ class SignupPage extends StatelessWidget {
                           ElevatedButton(
                             onPressed: () {
                               controller.registerWithEmailAndPassword();
-                              Get.back();
+                              //Get.back();
                             },
                             child: Text('Sign up',
                                 style: TextStyle(
@@ -704,5 +642,41 @@ Widget buildGlassTextField({
         ),
         style: TextStyle(color: textColor),
         obscureText: obscureText,
+      ));
+}
+
+Widget buildGlassTextFieldPassword({
+  required TextEditingController controller,
+  required String labelText,
+  required RxString errorText,
+  bool obscureText = false,
+  required Color textColor,
+  required RxBool obscureText2,
+}) {
+  return Obx(() => TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: labelText,
+          labelStyle: TextStyle(color: textColor.withOpacity(1.0)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8.0),
+            borderSide: BorderSide(color: textColor.withOpacity(0.5)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8.0),
+            borderSide: BorderSide(color: textColor),
+          ),
+          errorText: errorText.value.isNotEmpty ? errorText.value : null,
+          errorStyle: TextStyle(color: Colors.red[300]),
+          filled: true,
+          fillColor: textColor.withOpacity(0.1),
+          suffixIcon: IconButton(
+            icon: Icon(obscureText2.value ? Icons.visibility : Icons.visibility_off),
+            onPressed: () => obscureText2.value = !obscureText2.value,
+            color: textColor.withOpacity(0.5), // Color del ícono del ojo
+          )
+        ),
+        style: TextStyle(color: textColor),
+        obscureText: obscureText2.value,
       ));
 }
