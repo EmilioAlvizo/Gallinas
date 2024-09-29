@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:get_storage/get_storage.dart';
 import 'dart:io';
 
 import 'comida.dart';
@@ -29,7 +29,13 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: (db, oldVersion, newVersion) =>
+          _onUpgrade(db, oldVersion, newVersion, filePath),
+    );
   }
 
   Future _createDB(Database db, int version) async {
@@ -93,6 +99,38 @@ CREATE TABLE sumasC(
   precioUnitario REAL
 )
 ''');
+    // Agrega la nueva tabla sync_status
+    await db.execute('''
+      CREATE TABLE sync_status(
+        id TEXT PRIMARY KEY,
+        table_name TEXT,
+        synced INTEGER DEFAULT 0
+      )
+    ''');
+  }
+
+  Future _onUpgrade(
+      Database db, int oldVersion, int newVersion, String filePath) async {
+    if (oldVersion < 2) {
+      // Crear la nueva tabla sync_status si no existe
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sync_status(
+          id TEXT PRIMARY KEY,
+          table_name TEXT,
+          synced INTEGER DEFAULT 0
+        )
+      ''');
+
+      // Llenar sync_status con datos existentes
+      for (var table in ['sumas', 'restas', 'sumasH', 'restasH', 'sumasC']) {
+        var rows = await db.query(table);
+        for (var row in rows) {
+          await db.insert('sync_status',
+              {'id': row['id'], 'table_name': table, 'synced': 0},
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      }
+    }
   }
 
   // Modifica los métodos de inserción y consulta para que acepten el userId
@@ -100,11 +138,17 @@ CREATE TABLE sumasC(
     final db = await getDatabase(userId);
     await db.insert('sumas', suma,
         conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+        'sync_status', {'id': suma['id'], 'table_name': 'sumas', 'synced': 0},
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> insertResta(String userId, Map<String, dynamic> resta) async {
     final db = await getDatabase(userId);
     await db.insert('restas', resta,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+        'sync_status', {'id': resta['id'], 'table_name': 'restas', 'synced': 0},
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -112,17 +156,26 @@ CREATE TABLE sumasC(
     final db = await getDatabase(userId);
     await db.insert('sumasH', sumaH,
         conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+        'sync_status', {'id': sumaH['id'], 'table_name': 'sumasH', 'synced': 0},
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> insertRestaH(String userId, Map<String, dynamic> restaH) async {
     final db = await getDatabase(userId);
     await db.insert('restasH', restaH,
         conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('sync_status',
+        {'id': restaH['id'], 'table_name': 'restasH', 'synced': 0},
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> insertSumaC(String userId, Map<String, dynamic> sumaC) async {
     final db = await getDatabase(userId);
     await db.insert('sumasC', sumaC,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+        'sync_status', {'id': sumaC['id'], 'table_name': 'sumasC', 'synced': 0},
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -202,7 +255,9 @@ CREATE TABLE sumasC(
     final db = await getDatabase(userId);
     await db.transaction((txn) async {
       for (var data in batch) {
-        await txn.insert('sumasH', {
+        await txn.insert(
+          'sumasH',
+          {
             'id': data['id'],
             'ave': data['ave'],
             'buenos': data['buenos'],
@@ -210,7 +265,8 @@ CREATE TABLE sumasC(
             'nombre': data['nombre'],
             'rotos': data['rotos'],
           },
-          conflictAlgorithm: ConflictAlgorithm.replace,);
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     });
   }
@@ -220,7 +276,9 @@ CREATE TABLE sumasC(
     final db = await getDatabase(userId);
     await db.transaction((txn) async {
       for (var data in batch) {
-        await txn.insert('restasH', {
+        await txn.insert(
+          'restasH',
+          {
             'id': data['id'],
             'ave': data['ave'],
             'fecha': data['fecha'],
@@ -229,7 +287,8 @@ CREATE TABLE sumasC(
             'nombre': data['nombre'],
             'razon': data['razon'],
           },
-          conflictAlgorithm: ConflictAlgorithm.replace,);
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     });
   }
@@ -239,7 +298,9 @@ CREATE TABLE sumasC(
     final db = await getDatabase(userId);
     await db.transaction((txn) async {
       for (var data in batch) {
-        await txn.insert('sumasC',{
+        await txn.insert(
+          'sumasC',
+          {
             'id': data['id'],
             'ave': data['ave'],
             'cantidad': data['cantidad'],
@@ -249,9 +310,75 @@ CREATE TABLE sumasC(
             'precio': data['precio'],
             'precioUnitario': data['precioUnitario'],
           },
-          conflictAlgorithm: ConflictAlgorithm.replace,);
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     });
+  }
+
+  Future<Map<String, Map<String, int>>> obtenerResumenSincronizacion(
+      String userId) async {
+    final db = await getDatabase(userId);
+    final tablas = ['sumas', 'restas', 'sumasH', 'restasH', 'sumasC'];
+    Map<String, Map<String, int>> resumen = {};
+
+    for (var tabla in tablas) {
+      int totalRegistros = Sqflite.firstIntValue(
+              await db.rawQuery('SELECT COUNT(*) FROM $tabla')) ??
+          0;
+      int registrosSincronizados = Sqflite.firstIntValue(await db.rawQuery(
+              'SELECT COUNT(*) FROM sync_status WHERE table_name = ? AND synced = 1',
+              [tabla])) ??
+          0;
+      int registrosNoSincronizados = totalRegistros - registrosSincronizados;
+
+      resumen[tabla] = {
+        'total': totalRegistros,
+        'sincronizados': registrosSincronizados,
+        'noSincronizados': registrosNoSincronizados,
+      };
+    }
+
+    // Agregar un resumen total de todas las tablas
+    int totalGeneral = 0;
+    int sincronizadosGeneral = 0;
+    int noSincronizadosGeneral = 0;
+
+    resumen.values.forEach((resumenTabla) {
+      totalGeneral += resumenTabla['total']!;
+      sincronizadosGeneral += resumenTabla['sincronizados']!;
+      noSincronizadosGeneral += resumenTabla['noSincronizados']!;
+    });
+
+    resumen['total'] = {
+      'total': totalGeneral,
+      'sincronizados': sincronizadosGeneral,
+      'noSincronizados': noSincronizadosGeneral,
+    };
+
+    return resumen;
+  }
+
+  // Método para obtener datos no sincronizados
+  Future<List<Map<String, dynamic>>> getDatosNoSincronizados(
+      String userId, String nombreTabla) async {
+    final db = await getDatabase(userId);
+    final List<Map<String, dynamic>> unsyncedIds = await db.query('sync_status',
+        where: 'table_name = ? AND synced = ?', whereArgs: [nombreTabla, 0]);
+
+    return Future.wait(unsyncedIds.map((record) async {
+      final data = await db
+          .query(nombreTabla, where: 'id = ?', whereArgs: [record['id']]);
+      return data.first;
+    }));
+  }
+
+  // Método para actualizar el estado de sincronización
+  Future<void> actualizarEstadoSincronizacion(
+      String userId, String nombreTabla, String id) async {
+    final db = await getDatabase(userId);
+    await db.update('sync_status', {'synced': 1},
+        where: 'id = ? AND table_name = ?', whereArgs: [id, nombreTabla]);
   }
 
   // Método para cerrar y eliminar una base de datos
@@ -279,7 +406,16 @@ CREATE TABLE sumasC(
   // ... (resto de los métodos de la clase)
 }
 
-class UserSession extends GetxController {
+// Función para iniciar la migración de todas las bases de datos de usuario
+Future<void> initializeDatabases() async {
+  final userIds = await DatabaseHelper.instance.getDatabaseUsers();
+  for (var userId in userIds) {
+    await DatabaseHelper.instance.getDatabase(userId);
+  }
+  print('Bases de datos de usuario inicializadas y migradas si era necesario');
+}
+
+/*class UserSession extends GetxController {
   static String? currentUserId;
 
   Rx<String?> usuarioSeleccionado = currentUserId.obs;
@@ -306,6 +442,43 @@ class UserSession extends GetxController {
   static Future<void> logout() async {
     currentUserId = null;
   }
+}*/
+
+class UserSession extends GetxController {
+  static String? currentUserId;
+  final _storage = GetStorage();
+
+  Rx<String?> usuarioSeleccionado = Rx<String?>(null);
+
+  UserSession() {
+    // Cargar el usuario guardado al iniciar
+    usuarioSeleccionado.value = _storage.read('usuarioSeleccionado');
+    // Agrega un observador al usuarioSeleccionado
+    ever(usuarioSeleccionado, (String? userId) async {
+      if (userId != null) {
+        print('cambio user a $userId');
+        await syncDataFromFirebase(userId);
+        // Guardar el usuario seleccionado
+        _storage.write('usuarioSeleccionado', userId);
+      }
+    });
+  }
+
+  static Future<void> initializeForCurrentUser(User? user) async {
+    if (user == null) {
+      throw Exception('No hay usuario autenticado');
+    }
+    currentUserId = user.uid;
+    await DatabaseHelper.instance.getDatabase(currentUserId!);
+
+    // Actualizar usuarioSeleccionado
+    final userSession = Get.find<UserSession>();
+    userSession.usuarioSeleccionado.value = currentUserId;
+  }
+
+  static Future<void> logout() async {
+    currentUserId = null;
+  }
 }
 
 Future<void> addNewUser(String userId) async {
@@ -322,6 +495,28 @@ Future<void> cleanupDatabases(List<String> relevantUserIds) async {
     if (!relevantUserIds.contains(userId)) {
       await dbHelper.deleteDatabase(userId);
       print('Base de datos eliminada para el usuario no relevante: $userId');
+    }
+  }
+}
+
+Future<void> subirDatosConFirestore(String userId) async {
+  final db = DatabaseHelper.instance;
+  final firestore = FirebaseFirestore.instance;
+
+  final tablas = ['sumas', 'restas', 'sumasH', 'restasH', 'sumasC'];
+
+  for (var nombreTabla in tablas) {
+    final datosNoSincronizados =
+        await db.getDatosNoSincronizados(userId, nombreTabla);
+
+    for (var datos in datosNoSincronizados) {
+      final docRef = firestore
+          .collection('users')
+          .doc(userId)
+          .collection(nombreTabla)
+          .doc(datos['id']);
+      await docRef.set(datos);
+      await db.actualizarEstadoSincronizacion(userId, nombreTabla, datos['id']);
     }
   }
 }
@@ -372,6 +567,10 @@ Future<void> syncDataFromFirebase(String userId) async {
           await db.insertSumasCBatch(userId, batchData);
           break;
       }
+      // Actualizar el estado de sincronización en lote
+      final syncStatusUpdates = batchData.map((data) =>
+          db.actualizarEstadoSincronizacion(userId, collection, data['id']));
+      await Future.wait(syncStatusUpdates);
     }
 
     print('Sincronización completada con éxito');

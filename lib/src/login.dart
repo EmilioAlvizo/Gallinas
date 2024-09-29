@@ -56,8 +56,8 @@ class LoginController extends GetxController {
   }
 
   Future<void> signInWithEmailAndPassword() async {
-    if (!validateInputs(emailController, emailError, passwordController,
-        passwordError)) return;
+    if (!validateInputs(
+        emailController, emailError, passwordController, passwordError)) return;
 
     try {
       await _auth.signInWithEmailAndPassword(
@@ -68,8 +68,7 @@ class LoginController extends GetxController {
       // Navegar a la pantalla principal de la aplicación
     } on FirebaseAuthException catch (e) {
       print('$e');
-      handleFirebaseAuthError(
-          e, emailError, passwordError, generalError);
+      handleFirebaseAuthError(e, emailError, passwordError, generalError);
     } catch (e) {
       print('Ocurrió un error inesperado.: $e');
       generalError.value = 'Ocurrió un error inesperado. $e';
@@ -100,8 +99,7 @@ class LoginController extends GetxController {
       // Navegar a la pantalla principal de la aplicación
       // Get.offAllNamed('/home'); // Asegúrate de tener esta ruta definida
     } on FirebaseAuthException catch (e) {
-      handleFirebaseAuthError(
-          e, emailError, passwordError, generalError);
+      handleFirebaseAuthError(e, emailError, passwordError, generalError);
     } catch (e) {
       print('Error detallado: $e');
       generalError.value = 'Error inesperado: $e';
@@ -110,7 +108,7 @@ class LoginController extends GetxController {
 }
 
 class LoginPage extends StatelessWidget {
-  final LoginController controller = Get.find();
+  final LoginController _controller = Get.find();
   var _obscureText = true.obs;
 
   final List<String> imagePaths = [
@@ -168,18 +166,18 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 40),
                           buildGlassTextField(
-                            controller: controller.emailController,
+                            controller: _controller.emailController,
                             labelText: 'Email or username',
-                            errorText: controller.emailError,
+                            errorText: _controller.emailError,
                             textColor: textColor,
                           ),
                           const SizedBox(height: 16),
                           buildGlassTextFieldPassword(
-                            controller: controller.passwordController,
+                            controller: _controller.passwordController,
                             labelText: 'Password',
-                            errorText: controller.passwordError,
+                            errorText: _controller.passwordError,
                             obscureText: _obscureText.value,
-                            obscureText2: controller.obscureText2,
+                            obscureText2: _controller.obscureText2,
                             textColor: textColor,
                           ),
                           Align(
@@ -194,14 +192,14 @@ class LoginPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Obx(() => controller.generalError.value.isNotEmpty
+                          Obx(() => _controller.generalError.value.isNotEmpty
                               ? Text(
-                                  controller.generalError.value,
+                                  _controller.generalError.value,
                                   style: TextStyle(color: customColors.rojo),
                                 )
                               : Container()),
                           ElevatedButton(
-                            onPressed: controller.signInWithEmailAndPassword,
+                            onPressed: _controller.signInWithEmailAndPassword,
                             child: Text('Login',
                                 style: TextStyle(
                                     color: isDarkImage
@@ -255,7 +253,7 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           CustomGoogleSignInButton(
-                            onPressed: controller.signInWithGoogle,
+                            onPressed: _controller.signInWithGoogle,
                             theme: 'dark', // o 'dark' o 'neutral'
                           ),
                         ],
@@ -284,8 +282,8 @@ class SignupController extends GetxController {
   var generalError = ''.obs;
 
   void registerWithEmailAndPassword() async {
-    if (!validateInputs(emailController, emailError, passwordController,
-        passwordError)) return;
+    if (!validateInputs(
+        emailController, emailError, passwordController, passwordError)) return;
 
     try {
       await _auth.createUserWithEmailAndPassword(
@@ -296,8 +294,8 @@ class SignupController extends GetxController {
       //Get.offAll(() =>BottomNavBar()); // Navigate to home page after successful signup
     } on FirebaseAuthException catch (e) {
       print('FirebaseAuthException: ${e.code}'); // Añade esta línea
-      handleFirebaseAuthError(e, emailError, passwordError,
-          generalError); // Añade esta línea
+      handleFirebaseAuthError(
+          e, emailError, passwordError, generalError); // Añade esta línea
     } catch (e) {
       print('Unexpected error: $e'); // Añade esta línea
       generalError.value =
@@ -354,7 +352,7 @@ bool validateInputs(TextEditingController emailController, RxString emailError,
   return isValid;
 }
 
-void handleFirebaseAuthError(FirebaseAuthException e,RxString emailError,
+void handleFirebaseAuthError(FirebaseAuthException e, RxString emailError,
     RxString passwordError, RxString generalError) {
   print('Error de autenticación: ${e.code}'); // Añade esta línea
   switch (e.code) {
@@ -380,7 +378,8 @@ void handleFirebaseAuthError(FirebaseAuthException e,RxString emailError,
       generalError.value = 'Operación no permitida. Contacte al soporte.';
       break;
     case 'network-request-failed':
-      generalError.value = 'Error de conexión. Verifique su conexión a internet.';
+      generalError.value =
+          'Error de conexión. Verifique su conexión a internet.';
       break;
     case 'too-many-requests':
       generalError.value = 'Demasiados intentos. Por favor, intente más tarde.';
@@ -656,26 +655,26 @@ Widget buildGlassTextFieldPassword({
   return Obx(() => TextFormField(
         controller: controller,
         decoration: InputDecoration(
-          labelText: labelText,
-          labelStyle: TextStyle(color: textColor.withOpacity(1.0)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-            borderSide: BorderSide(color: textColor.withOpacity(0.5)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-            borderSide: BorderSide(color: textColor),
-          ),
-          errorText: errorText.value.isNotEmpty ? errorText.value : null,
-          errorStyle: TextStyle(color: Colors.red[300]),
-          filled: true,
-          fillColor: textColor.withOpacity(0.1),
-          suffixIcon: IconButton(
-            icon: Icon(obscureText2.value ? Icons.visibility : Icons.visibility_off),
-            onPressed: () => obscureText2.value = !obscureText2.value,
-            color: textColor.withOpacity(0.5), // Color del ícono del ojo
-          )
-        ),
+            labelText: labelText,
+            labelStyle: TextStyle(color: textColor.withOpacity(1.0)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8.0),
+              borderSide: BorderSide(color: textColor.withOpacity(0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8.0),
+              borderSide: BorderSide(color: textColor),
+            ),
+            errorText: errorText.value.isNotEmpty ? errorText.value : null,
+            errorStyle: TextStyle(color: Colors.red[300]),
+            filled: true,
+            fillColor: textColor.withOpacity(0.1),
+            suffixIcon: IconButton(
+              icon: Icon(
+                  obscureText2.value ? Icons.visibility : Icons.visibility_off),
+              onPressed: () => obscureText2.value = !obscureText2.value,
+              color: textColor.withOpacity(0.5), // Color del ícono del ojo
+            )),
         style: TextStyle(color: textColor),
         obscureText: obscureText2.value,
       ));

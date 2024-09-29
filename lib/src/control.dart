@@ -241,7 +241,7 @@ void updateObjeto(oldResta, newResta, String nombre) async {
         .update(newResta.toJson());
   }
 }
-
+/*
 Future<void> actualizarSumas(List<dynamic> sumas, String texto) async {
   final NavegacionVar navegacionVar = Get.find<NavegacionVar>();
 
@@ -264,8 +264,8 @@ Future<void> actualizarSumas(List<dynamic> sumas, String texto) async {
   } catch (e) {
     print('Error al actualizar las $texto: $e');
   }
-}
-
+}*/
+/*
 Future<void> actualizarRestas(List<dynamic> restas, String texto) async {
   final NavegacionVar navegacionVar = Get.find<NavegacionVar>();
   try {
@@ -284,7 +284,7 @@ Future<void> actualizarRestas(List<dynamic> restas, String texto) async {
     print('Error al actualizar las $texto: $e');
   }
 }
-
+*/
 class NavegacionVar extends GetxController with WidgetsBindingObserver {
   Rx<int> tabIndex = 0.obs;
   Rx<int> botonIndex = 0.obs;
@@ -376,7 +376,7 @@ class NavegacionVar extends GetxController with WidgetsBindingObserver {
       //await syncWithFirebase(dataMap);
     }
   }
-
+/*
   syncWithFirebase(Map<String, List<dynamic>> dataMap) async {
     print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
     print('                           syncWithFirebase                   ');
@@ -1090,7 +1090,7 @@ class NavegacionVar extends GetxController with WidgetsBindingObserver {
       print('                      error al cargarDatos               ');
       print('==========================================================');
     }
-  }
+  }*/
 }
 
 class Caja extends StatelessWidget {

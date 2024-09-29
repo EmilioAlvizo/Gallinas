@@ -4,12 +4,11 @@ import 'package:get/get.dart';
 import 'package:get/get_rx/get_rx.dart';
 import 'package:side_sheet/side_sheet.dart';
 
-import 'autenticacion.dart';
+import 'cerrar.dart';
 import 'comida.dart';
 import 'control.dart';
 import 'gallinas.dart';
 import 'huevos.dart';
-import 'login.dart';
 
 enum DateFilterOption {
   last7Days,
@@ -106,12 +105,10 @@ class AveControl extends GetxController {
 
 class ThemeController extends GetxController {
   var isDarkMode = false.obs;
-  BuildContext context;
-  ThemeController({required this.context});
 
-  void onInit() {
-    // TODO: implement onInit
-    isDarkMode.value = MediaQuery.of(context).platformBrightness == Brightness.dark;
+  inicio(context) {
+    isDarkMode.value =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
   }
 
   void toggleTheme() {
@@ -229,6 +226,7 @@ class OptionsPage1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     User? user = FirebaseAuth.instance.currentUser;
+    themeController.inicio(context);
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       width: MediaQuery.of(context).size.width * 0.8,
@@ -267,7 +265,7 @@ class OptionsPage1 extends StatelessWidget {
               onTap: () => themeController.toggleTheme(),
             ),
             // Botón de sincronización
-            ListTile(
+            /*ListTile(
               leading: Icon(Icons.sync),
               title: Text('Sincronizar datos'),
               onTap: () {
@@ -282,7 +280,7 @@ class OptionsPage1 extends StatelessWidget {
                 navegacionVar.loadFromFirebase(cardControllerC.sumas, 'sumasC');
                 print('cardController.sumas fin ${cardController.sumas}');
               },
-            ),
+            ),*/
             Spacer(),
             // Botón de cerrar sesión
             /*ElevatedButton(
@@ -409,7 +407,7 @@ class OptionsPage3 extends StatelessWidget {
               },
               child: const Text('SUBIR'),
             ),*/
-            ElevatedButton(
+            /*ElevatedButton(
               onPressed: () {
                 print('cardController.sumas 1 ${cardController.sumas}');
                 navegacionVar.loadFromFirebase(cardController.sumas, 'sumas');
@@ -432,7 +430,7 @@ class OptionsPage3 extends StatelessWidget {
                 //navegacionVar.guardarDatos();
               },
               child: const Icon(Icons.sync),
-            ),
+            ),*/
             /*ElevatedButton(
               onPressed: () {
                 Get.back();
@@ -464,7 +462,7 @@ class OptionsPage4 extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton(
+            /*ElevatedButton(
               onPressed: () {
                 print('cardController.sumas 1 ${cardController.sumas}');
                 navegacionVar.loadFromFirebase(cardController.sumas, 'sumas');
@@ -475,7 +473,7 @@ class OptionsPage4 extends StatelessWidget {
                 navegacionVar.loadFromFirebase(cardControllerC.sumas, 'sumasC');
               },
               child: const Icon(Icons.sync),
-            ),
+            ),*/
           ],
         ),
       ),

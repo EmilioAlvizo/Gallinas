@@ -4,8 +4,8 @@ import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:get_storage/get_storage.dart';
 
-import 'src/autenticacion.dart';
 import 'src/comida.dart';
 import 'src/control.dart';
 import 'src/fuente.dart';
@@ -20,21 +20,21 @@ import 'src/sqlite.dart';
 import 'package:flutter/services.dart';
 
 void main() async {
+  //await GetStorage.init();
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  Get.lazyPut(() => ThemeController());
   Get.lazyPut(() => CardControllerH());
   Get.lazyPut(() => CardControllerC());
   Get.lazyPut(() => CardController());
-  Get.lazyPut(() => AuthController());
   Get.lazyPut(() => InvitationSystem());
   Get.lazyPut(() => AveControl());
   Get.lazyPut(() => NavegacionVar());
   Get.lazyPut(() => FarmSelectionController());
-  //Get.lazyPut(() => LoginController());
   Get.put(LoginController());
   Get.lazyPut(() => FilterController());
   Get.lazyPut(() => UserSession());
@@ -43,7 +43,8 @@ void main() async {
   FirebaseFirestore.instance.settings =
       const Settings(persistenceEnabled: true);
 
-  //SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  //await initializeDatabases();
   runApp(MyApp());
 }
 
@@ -52,21 +53,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Get.lazyPut(() => ThemeController(context: context));
+    //Get.lazyPut(() => ThemeController(context: context));
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Gallinero',
       home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+        stream: FirebaseAuth.instance.userChanges(),
         builder: (context, snapshot) {
           print(
               'snapshot ${snapshot.connectionState} +++++++++++++++++++----------------------------           en myapp');
           if (snapshot.connectionState == ConnectionState.active) {
             User? user = snapshot.data;
-            SystemChrome.setEnabledSystemUIMode(
-              SystemUiMode.immersiveSticky,
-              //SystemUiMode.edgeToEdge
-            );
             print(
                 'user ${user} +++++++++++++++++++----------------------------           en myapp');
             if (user == null) {

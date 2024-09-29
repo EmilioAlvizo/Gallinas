@@ -462,13 +462,13 @@ class FarmCard extends StatelessWidget {
   UserSession userSession;
 
   FarmCard({
-    Key? key,
+    super.key,
     required this.farm,
     required this.onTap,
     required this.isSelected,
     required this.backgroundImage,
     required this.userSession,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -489,7 +489,7 @@ class FarmCard extends StatelessWidget {
               colorFilter: ColorFilter.mode(
                 isSelected
                     ? Color.fromARGB(0, 0, 0, 0)
-                    : customColors.card!.withOpacity(0.5),
+                    : customColors.card!.withOpacity(0.8),
                 BlendMode.srcOver,
               ),
             ),
@@ -543,7 +543,14 @@ class FarmCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      OutlinedText(
+                        text: farm['location'],
+                        fontSize: 12,
+                        textColor: Colors.white,
+                        outlineColor: Colors.black,
+                        outlineWidth: 2,
+                      ),
+                      /*Text(
                         farm['location'],
                         style: TextStyle(
                           color: userSession.usuarioSeleccionado.value ==
@@ -552,8 +559,15 @@ class FarmCard extends StatelessWidget {
                               : customColors.texto3,
                           fontSize: 12,
                         ),
+                      ),*/
+                      OutlinedText(
+                        text: farm['id'],
+                        fontSize: 12,
+                        textColor: Colors.white,
+                        outlineColor: Colors.black,
+                        outlineWidth: 2,
                       ),
-                      Text(
+                      /*Text(
                         farm['id'],
                         style: TextStyle(
                           color: userSession.usuarioSeleccionado.value ==
@@ -562,7 +576,7 @@ class FarmCard extends StatelessWidget {
                               : customColors.texto3,
                           fontSize: 12,
                         ),
-                      ),
+                      ),*/
                     ],
                   ),
                 ),
@@ -690,6 +704,22 @@ class FarmSelectionScreen extends StatelessWidget {
           Stack(alignment: Alignment.center, children: [
             Column(
               children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    final resumen =
+                        await DatabaseHelper.instance.getDatabaseUsers();
+                    print(resumen);
+                    //print(resumen[1]);
+                    final resumen2 = await DatabaseHelper.instance
+                        .obtenerResumenSincronizacion(
+                            userSession.usuarioSeleccionado.value!);
+                    print(resumen2);
+                    //Get.back();
+                  },
+                  child: Text(
+                    'Sign up',
+                  ),
+                ),
                 Expanded(
                   child: Obx(() {
                     if (controller.farms.isEmpty) {
